@@ -98,5 +98,33 @@ public class HTTP {
                 return null;
             }
     } 
+    public static String[] parseEmails(String response) {
+        JSONObject jsonResponse = new JSONObject(response);
+        if (jsonResponse.has("items")) {
+            // System.out.println(jsonResponse.getJSONArray("items").length() + " records found in the response");
+            String[] emails = new String[jsonResponse.getJSONArray("items").length()];
+            for (int i = 0; i < emails.length; i++) {
+                emails[i] = jsonResponse.getJSONArray("items").getJSONObject(i).getString("email");
+            }
+            return emails;
+        } else {
+            System.out.println("Records not found in the response");
+            return null;
+        }
+    }
+    public static String[] parseUsername(String response) {
+        JSONObject jsonResponse = new JSONObject(response);
+        if (jsonResponse.has("items")) {
+            // System.out.println(jsonResponse.getJSONArray("items").length() + " records found in the response");
+            String[] usernames = new String[jsonResponse.getJSONArray("items").length()];
+            for (int i = 0; i < usernames.length; i++) {
+                usernames[i] = jsonResponse.getJSONArray("items").getJSONObject(i).getString("username");
+            }
+            return usernames;
+        } else {
+            System.out.println("Records not found in the response");
+            return null;
+        }
+    }
 }
 
