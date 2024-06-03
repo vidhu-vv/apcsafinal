@@ -1,96 +1,46 @@
 package com.apcs;
 import java.io.*;
-import java.net.*;
+import java.util.*;
 import java.nio.charset.StandardCharsets;
-import org.json.JSONObject;
 import io.github.cdimascio.dotenv.Dotenv;
 import io.github.cdimascio.dotenv.DotenvException;
-
 public final class App {
     private App() {
     }
     public static void main(String[] args) throws Exception, DotenvException {
         Dotenv dotenv = Dotenv.load();
-
+        Scanner input = new Scanner(System.in);
         String token = getAuthToken(dotenv.get("AUTH_URL"), dotenv.get("ADMIN_IDENTITY"), dotenv.get("ADMIN_SECRET"));
         if (token != null) {
-            sendGetRequest(token, dotenv.get("POSTS_URL"));
+            String response = HTTP.get(dotenv.get("POSTS_URL"), token);
+            System.out.println(response);
         } else {
             System.out.println("Failed to retrieve token");
         }
+        System.out.println("Email: ");
+        String email = input.nextLine();
+        System.out.println("Password: ");  
+        String password = input.nextLine();
+
+        byte[] out = String.format("{\"identity\":\"%s\",\"password\":\"%s\"}", email, password).getBytes(StandardCharsets.UTF_8);
+        String signin = "https://apcsa.continuityhost.com/api/collections/users/auth-with-password";
+        try {
+            String response = HTTP.post(signin, out);
+            String userToken = HTTP.parseToken(response);
+            System.out.println(userToken);
+        }
+        catch (NullPointerException e) {
+            System.out.println("Failed to sign in");
+        }
+        input.close();
+            
     }
 
     private static String getAuthToken(String AUTH_URL, String ADMIN_ID, String ADMIN_PASS) throws IOException {
-        @SuppressWarnings("deprecation")
-        URL url = new URL(AUTH_URL);
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("POST");
-        connection.setDoOutput(true);
-        byte[] out = String.format("{\"identity\":\"%s\",\"password\":\"%s\"}", ADMIN_ID, ADMIN_PASS)
+            byte[] out = String.format("{\"identity\":\"%s\",\"password\":\"%s\"}", ADMIN_ID, ADMIN_PASS)
                 .getBytes(StandardCharsets.UTF_8);
-        int length = out.length;
-        connection.setFixedLengthStreamingMode(length);
-        connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-        connection.connect();
-
-        try (OutputStream os = connection.getOutputStream()) {
-            os.write(out);
-        }
-
-        int responseCode = connection.getResponseCode();
-        System.out.println("POST Response Code: " + responseCode);
-
-        if (responseCode == HttpURLConnection.HTTP_OK) {
-            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            String inputLine;
-            StringBuilder response = new StringBuilder();
-            while ((inputLine = in.readLine()) != null) {
-                response.append(inputLine);
-            }
-            in.close();
-
-            // Print the entire response for debugging purposes
-            String responseString = response.toString();
-            System.out.println("Response: " + responseString);
-
+            String responseString = HTTP.post(AUTH_URL, out);
             // Parse the JSON response to extract the token
-            JSONObject jsonResponse = new JSONObject(responseString);
-            if (jsonResponse.has("token")) {
-                String token = jsonResponse.getString("token");
-                System.out.println("Extracted Token: " + token);
-                return token;
-            } else {
-                System.out.println("Token not found in the response");
-                return null;
-            }
-        } else {
-            System.out.println("POST request not worked");
-            return null;
-        }
-    }
-
-    private static void sendGetRequest(String token, String GET_URL) throws IOException {
-        @SuppressWarnings("deprecation")
-        URL url = new URL(GET_URL);
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("GET");
-        connection.setRequestProperty("Authorization", "Bearer " + token);
-
-        int responseCode = connection.getResponseCode();
-        System.out.println("GET Response Code: " + responseCode);
-
-        if (responseCode == HttpURLConnection.HTTP_OK) {
-            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            String inputLine;
-            StringBuilder response = new StringBuilder();
-            while ((inputLine = in.readLine()) != null) {
-                response.append(inputLine);
-            }
-            in.close();
-
-            System.out.println("GET Response: " + response.toString());
-        } else {
-            System.out.println("GET request not worked");
-        }
+            return HTTP.parseToken(responseString);
     }
 }
