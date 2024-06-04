@@ -1,11 +1,15 @@
 package com.apcs;
 import java.io.*;
 import java.util.*;
+
+import org.json.JSONObject;
+
 import java.nio.charset.StandardCharsets;
 import io.github.cdimascio.dotenv.Dotenv;
 import io.github.cdimascio.dotenv.DotenvException;
 @SuppressWarnings("unused")
 public final class App {
+    protected static String currentUserId = "";
     private App() {
     }
     public static void main(String[] args) throws Exception, DotenvException {
@@ -61,9 +65,21 @@ public final class App {
     }
     private static void listFollowing() throws IOException {
         Dotenv dotenv = Dotenv.load();
-        String url = "https://apcsa.continuityhost.com/api/collections/follows/records";
+        String url = "https://apcsa.continuityhost.com/api/collections/users/records/"+currentUserId;
         String token = getAuthToken(dotenv.get("AUTH_URL"), dotenv.get("ADMIN_IDENTITY"), dotenv.get("ADMIN_SECRET"));
         String response = HTTP.get(url, token);
+        String[] following = HTTP.parseFollowIDs(response);
+        for (String id : following) {
+            String user = "https://apcsa.continuityhost.com/api/collections/users/records/:"+id;
+            String userResponse = HTTP.get(user, token);
+            JSONObject jsonResponse = new JSONObject(userResponse);
+            if (jsonResponse.has("username")) {
+                String username = jsonResponse.getString("username");
+                System.out.println(username);
+            } else {
+                System.out.println("Username not found in the response");
+            }
+        }
         System.out.println(response);
     }
     private static void listFollowers() throws IOException {
@@ -71,6 +87,7 @@ public final class App {
         String url = "https://apcsa.continuityhost.com/api/collections/follows/records";
         String token = getAuthToken(dotenv.get("AUTH_URL"), dotenv.get("ADMIN_IDENTITY"), dotenv.get("ADMIN_SECRET"));
         String response = HTTP.get(url, token);
+
         System.out.println(response);
     }
     
@@ -129,7 +146,7 @@ public final class App {
                 return false;
             }
         }
-        byte[] out = String.format("{\"email\":\"%s\",\"password\":\"%s\", \"passwordConfirm\":\"%s\",\"name\":\"%s\",\"username\":\"%s\"}", email, password, confirm, name, username).getBytes(StandardCharsets.UTF_8);
+        byte[] out = String.format("{\"email\":\"%s\",\"password\":\"%s\", \"passwordConfirm\":\"%s\",\"name\":\"%s\",\"username\":\"%s\",\"verified\":\"true\"}", email, password, confirm, name, username).getBytes(StandardCharsets.UTF_8);
         String signup = "https://apcsa.continuityhost.com/api/collections/users/records";
         try {
             String response = HTTP.post(signup, out);
@@ -153,7 +170,9 @@ public final class App {
         String signin = "https://apcsa.continuityhost.com/api/collections/users/auth-with-password";
         try {
             String response = HTTP.post(signin, out);
+            System.out.println(response);
             String userToken = HTTP.parseToken(response);
+            currentUserId = HTTP.parseID(response);
             System.out.println(userToken);
             return true;
         }

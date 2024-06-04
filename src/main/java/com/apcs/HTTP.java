@@ -98,6 +98,30 @@ public class HTTP {
                 return null;
             }
     } 
+    public static String parseID(String response) {
+        JSONObject jsonResponse = new JSONObject(response);
+        JSONObject record = jsonResponse.getJSONObject("record");
+        if (record.has("id")) {
+            String id = record.getString("id");
+            System.out.println(id);
+            return id;
+        } else {
+            System.out.println("ID not found in the response");
+            return null;
+        }
+    }
+    public static String[] parseFollowIDs(String response) {
+        JSONObject jsonResponse = new JSONObject(response);
+        if (jsonResponse.has("followingIDs")) {
+            // System.out.println(jsonResponse.getJSONArray("items").length() + " records found in the response");
+            String[] followingIDs = jsonResponse.getString("followingIDs").split(",");
+            return followingIDs;
+        } else {
+            System.out.println("Records not found in the response");
+            return null;
+        
+        }
+    }
     public static String[] parseEmails(String response) {
         JSONObject jsonResponse = new JSONObject(response);
         if (jsonResponse.has("items")) {
