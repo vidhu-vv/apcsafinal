@@ -52,7 +52,17 @@ public final class App {
                 case "/lfg":
                     listFollowing();
                     break;
-                
+                case "/p":
+                    System.out.println("Enter post: ");
+                    String post = input.nextLine();
+                    byte[] out = String.format("{\"content\":\"%s\",\"author\":\"%s\"}", post, currentUserId).getBytes(StandardCharsets.UTF_8);
+                    String url = "https://apcsa.continuityhost.com/api/collections/posts/records";
+                    String response = VHTTP.post(url, out, token);
+                    System.out.println(response);
+                    break;
+                case "/f":
+                    follow();
+                    break;
                 default:
                     System.out.println("Invalid command");
             }
@@ -63,15 +73,49 @@ public final class App {
         input.close();
             
     }
+    private static void follow() throws IOException {
+        Dotenv dotenv = Dotenv.load();
+        Scanner input = new Scanner(System.in);
+        System.out.println("Enter username to follow: ");
+        String username = input.nextLine();
+        String token = getAuthToken(dotenv.get("AUTH_URL"), dotenv.get("ADMIN_IDENTITY"), dotenv.get("ADMIN_SECRET"));
+        String id = VHTTP.parseIDFromUsername(username, token);
+        System.out.println(id);
+        if (!checkIfShouldFollow(id)) {
+            System.out.println("Already following this user");
+            return;
+        }
+        byte[] out = String.format("{\"follower\":\"%s\",\"followee\":\"%s\"}", currentUserId, id).getBytes(StandardCharsets.UTF_8);
+        String url = "https://apcsa.continuityhost.com/api/collections/follows/records";
+        String response = VHTTP.post(url, out, token);
+        System.out.println(response);
+
+    }
+    private static boolean checkIfShouldFollow(String id) throws IOException{
+        Dotenv dotenv = Dotenv.load();
+        String url = "https://apcsa.continuityhost.com/api/collections/follows/records";
+        String token = getAuthToken(dotenv.get("AUTH_URL"), dotenv.get("ADMIN_IDENTITY"), dotenv.get("ADMIN_SECRET"));
+        String response = VHTTP.get(url, token);
+        ArrayList<String> following = VHTTP.parseFollowIDs(response, currentUserId);
+        for (String i : following) {
+            if (i.equals(id)) {
+                return false;
+            }
+            else {
+                continue;
+            }
+        }
+        return true;
+    }
     private static void listFollowing() throws IOException {
         Dotenv dotenv = Dotenv.load();
-        String url = "https://apcsa.continuityhost.com/api/collections/users/records/"+currentUserId;
+        String url = "https://apcsa.continuityhost.com/api/collections/follows/records/";
         String token = getAuthToken(dotenv.get("AUTH_URL"), dotenv.get("ADMIN_IDENTITY"), dotenv.get("ADMIN_SECRET"));
-        String response = HTTP.get(url, token);
-        String[] following = HTTP.parseFollowIDs(response);
+        String response = VHTTP.get(url, token);
+        ArrayList<String> following = VHTTP.parseFollowIDs(response, currentUserId);
         for (String id : following) {
-            String user = "https://apcsa.continuityhost.com/api/collections/users/records/:"+id;
-            String userResponse = HTTP.get(user, token);
+            String user = "https://apcsa.continuityhost.com/api/collections/users/records/"+id;
+            String userResponse = VHTTP.get(user, token);
             JSONObject jsonResponse = new JSONObject(userResponse);
             if (jsonResponse.has("username")) {
                 String username = jsonResponse.getString("username");
@@ -80,13 +124,13 @@ public final class App {
                 System.out.println("Username not found in the response");
             }
         }
-        System.out.println(response);
+        // System.out.println(response);
     }
     private static void listFollowers() throws IOException {
         Dotenv dotenv = Dotenv.load();
         String url = "https://apcsa.continuityhost.com/api/collections/follows/records";
         String token = getAuthToken(dotenv.get("AUTH_URL"), dotenv.get("ADMIN_IDENTITY"), dotenv.get("ADMIN_SECRET"));
-        String response = HTTP.get(url, token);
+        String response = VHTTP.get(url, token);
 
         System.out.println(response);
     }
@@ -95,24 +139,24 @@ public final class App {
         Dotenv dotenv = Dotenv.load();
         String url = "https://apcsa.continuityhost.com/api/collections/posts/records";
         String token = getAuthToken(dotenv.get("AUTH_URL"), dotenv.get("ADMIN_IDENTITY"), dotenv.get("ADMIN_SECRET"));
-        String response = HTTP.get(url, token);
+        String response = VHTTP.get(url, token);
         System.out.println(response);
     }
     private static String[] parseEmails() throws IOException {
         Dotenv dotenv = Dotenv.load();
         String url = "https://apcsa.continuityhost.com/api/collections/users/records";
         String token = getAuthToken(dotenv.get("AUTH_URL"), dotenv.get("ADMIN_IDENTITY"), dotenv.get("ADMIN_SECRET"));
-        String response = HTTP.get(url, token);
+        String response = VHTTP.get(url, token);
         // System.out.println(response);
-        return HTTP.parseEmails(response);
+        return VHTTP.parseEmails(response);
     }
     private static String[] parseUsernames() throws IOException {
         Dotenv dotenv = Dotenv.load();
         String url = "https://apcsa.continuityhost.com/api/collections/users/records";
         String token = getAuthToken(dotenv.get("AUTH_URL"), dotenv.get("ADMIN_IDENTITY"), dotenv.get("ADMIN_SECRET"));
-        String response = HTTP.get(url, token);
+        String response = VHTTP.get(url, token);
         // System.out.println(response);
-        return HTTP.parseUsername(response);
+        return VHTTP.parseUsername(response);
     }
     @SuppressWarnings("resource")
     private static boolean signUp() throws IOException {
@@ -149,7 +193,7 @@ public final class App {
         byte[] out = String.format("{\"email\":\"%s\",\"password\":\"%s\", \"passwordConfirm\":\"%s\",\"name\":\"%s\",\"username\":\"%s\",\"verified\":\"true\"}", email, password, confirm, name, username).getBytes(StandardCharsets.UTF_8);
         String signup = "https://apcsa.continuityhost.com/api/collections/users/records";
         try {
-            String response = HTTP.post(signup, out);
+            String response = VHTTP.post(signup, out);
             System.out.println(response);
             return true;
         }
@@ -169,10 +213,10 @@ public final class App {
         byte[] out = String.format("{\"identity\":\"%s\",\"password\":\"%s\"}", email, password).getBytes(StandardCharsets.UTF_8);
         String signin = "https://apcsa.continuityhost.com/api/collections/users/auth-with-password";
         try {
-            String response = HTTP.post(signin, out);
+            String response = VHTTP.post(signin, out);
             System.out.println(response);
-            String userToken = HTTP.parseToken(response);
-            currentUserId = HTTP.parseID(response);
+            String userToken = VHTTP.parseToken(response);
+            currentUserId = VHTTP.parseID(response);
             System.out.println(userToken);
             return true;
         }
@@ -184,8 +228,8 @@ public final class App {
     private static String getAuthToken(String AUTH_URL, String ADMIN_ID, String ADMIN_PASS) throws IOException {
             byte[] out = String.format("{\"identity\":\"%s\",\"password\":\"%s\"}", ADMIN_ID, ADMIN_PASS)
                 .getBytes(StandardCharsets.UTF_8);
-            String responseString = HTTP.post(AUTH_URL, out);
+            String responseString = VHTTP.post(AUTH_URL, out);
             // Parse the JSON response to extract the token
-            return HTTP.parseToken(responseString);
+            return VHTTP.parseToken(responseString);
     }
 }

@@ -2,17 +2,50 @@ package com.apcs;
 
 import java.io.*;
 import java.net.*;
-
 import org.json.JSONObject;
+import java.util.*;
+@SuppressWarnings("deprecation")
 
-
-public class HTTP {
-    public HTTP() {
+public class VHTTP {
+    public VHTTP() {
     }
     public static String post(String url, byte[] json) throws IOException {
         URL con = new URL(url);
         HttpURLConnection connection = (HttpURLConnection) con.openConnection();
         connection.setRequestMethod("POST");
+        connection.setDoOutput(true);
+        int length = json.length;
+        connection.setFixedLengthStreamingMode(length);
+        connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+        connection.connect();
+
+        try (OutputStream os = connection.getOutputStream()) {
+            os.write(json);
+        }
+        int responseCode = connection.getResponseCode();
+        System.out.println("POST Response Code: " + responseCode);
+        if (responseCode == HttpURLConnection.HTTP_OK) {
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            String inputLine;
+            StringBuilder response = new StringBuilder();
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
+
+            String responseString = response.toString();
+            return responseString;
+        } else {
+            System.out.println("POST request failed. Please try again.");
+            return null;
+        }
+         
+    }
+    public static String post(String url, byte[] json, String token) throws IOException {
+        URL con = new URL(url);
+        HttpURLConnection connection = (HttpURLConnection) con.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Authorization", "Bearer " + token);
         connection.setDoOutput(true);
         int length = json.length;
         connection.setFixedLengthStreamingMode(length);
@@ -110,17 +143,51 @@ public class HTTP {
             return null;
         }
     }
-    public static String[] parseFollowIDs(String response) {
+    public static String parseIDFromUsername(String username, String token) {
+        String url = "https://apcsa.continuityhost.com/api/collections/users/records";
+        try {
+            String response = VHTTP.get(url, token);
+            JSONObject jsonResponse = new JSONObject(response);
+            if (jsonResponse.has("items")) {
+                System.out.println(jsonResponse.getJSONArray("items").length() + " records found in the response");
+                System.out.println(jsonResponse.getJSONArray("items"));
+                for (int i = 0; i < jsonResponse.getJSONArray("items").length(); i++) {
+                    if (jsonResponse.getJSONArray("items").getJSONObject(i).getString("username").equals(username)) {
+                        String id = jsonResponse.getJSONArray("items").getJSONObject(i).getString("id");
+                        return id;
+                    }
+                }
+                System.out.println("Username not found in the response");
+                return null;
+            } else {
+                System.out.println("Records not found in the response");
+                return null;
+            }
+        } catch (IOException e) {
+            System.out.println("Error: " + e);
+            return null;
+        }
+    }
+    public static ArrayList<String> parseFollowIDs(String response, String id) {
         JSONObject jsonResponse = new JSONObject(response);
-        if (jsonResponse.has("followingIDs")) {
+        ArrayList<String> followingIDs = new ArrayList<String>();
+        if (jsonResponse.has("items")) {
             // System.out.println(jsonResponse.getJSONArray("items").length() + " records found in the response");
-            String[] followingIDs = jsonResponse.getString("followingIDs").split(",");
-            return followingIDs;
+            for (int i = 0; i < jsonResponse.getJSONArray("items").length(); i++) {
+                if(jsonResponse.getJSONArray("items").getJSONObject(i).getString("follower").equals(id)){
+                    followingIDs.add(jsonResponse.getJSONArray("items").getJSONObject(i).getString("followee"));
+                }
+                else {
+                    continue;
+                }
+            }
         } else {
             System.out.println("Records not found in the response");
             return null;
-        
         }
+        return followingIDs;
+
+                
     }
     public static String[] parseEmails(String response) {
         JSONObject jsonResponse = new JSONObject(response);
