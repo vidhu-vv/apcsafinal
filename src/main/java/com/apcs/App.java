@@ -96,7 +96,7 @@ public final class App {
         String url = "https://apcsa.continuityhost.com/api/collections/follows/records";
         String token = getAuthToken(dotenv.get("AUTH_URL"), dotenv.get("ADMIN_IDENTITY"), dotenv.get("ADMIN_SECRET"));
         String response = VHTTP.get(url, token);
-        ArrayList<String> following = VHTTP.parseFollowIDs(response, currentUserId);
+        ArrayList<String> following = VHTTP.parseFollowingIDs(response, currentUserId);
         for (String i : following) {
             if (i.equals(id)) {
                 return false;
@@ -112,7 +112,7 @@ public final class App {
         String url = "https://apcsa.continuityhost.com/api/collections/follows/records/";
         String token = getAuthToken(dotenv.get("AUTH_URL"), dotenv.get("ADMIN_IDENTITY"), dotenv.get("ADMIN_SECRET"));
         String response = VHTTP.get(url, token);
-        ArrayList<String> following = VHTTP.parseFollowIDs(response, currentUserId);
+        ArrayList<String> following = VHTTP.parseFollowingIDs(response, currentUserId);
         for (String id : following) {
             String user = "https://apcsa.continuityhost.com/api/collections/users/records/"+id;
             String userResponse = VHTTP.get(user, token);
@@ -128,11 +128,21 @@ public final class App {
     }
     private static void listFollowers() throws IOException {
         Dotenv dotenv = Dotenv.load();
-        String url = "https://apcsa.continuityhost.com/api/collections/follows/records";
+        String url = "https://apcsa.continuityhost.com/api/collections/follows/records/";
         String token = getAuthToken(dotenv.get("AUTH_URL"), dotenv.get("ADMIN_IDENTITY"), dotenv.get("ADMIN_SECRET"));
         String response = VHTTP.get(url, token);
-
-        System.out.println(response);
+        ArrayList<String> following = VHTTP.parseFollowerIDs(response, currentUserId);
+        for (String id : following) {
+            String user = "https://apcsa.continuityhost.com/api/collections/users/records/"+id;
+            String userResponse = VHTTP.get(user, token);
+            JSONObject jsonResponse = new JSONObject(userResponse);
+            if (jsonResponse.has("username")) {
+                String username = jsonResponse.getString("username");
+                System.out.println(username);
+            } else {
+                System.out.println("Username not found in the response");
+            }
+        }
     }
     
     private static void listPosts() throws IOException {

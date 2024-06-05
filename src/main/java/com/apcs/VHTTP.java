@@ -168,7 +168,7 @@ public class VHTTP {
             return null;
         }
     }
-    public static ArrayList<String> parseFollowIDs(String response, String id) {
+    public static ArrayList<String> parseFollowingIDs(String response, String id) {
         JSONObject jsonResponse = new JSONObject(response);
         ArrayList<String> followingIDs = new ArrayList<String>();
         if (jsonResponse.has("items")) {
@@ -185,9 +185,26 @@ public class VHTTP {
             System.out.println("Records not found in the response");
             return null;
         }
-        return followingIDs;
-
-                
+        return followingIDs;         
+    }
+    public static ArrayList<String> parseFollowerIDs(String response, String id) {
+        JSONObject jsonResponse = new JSONObject(response);
+        ArrayList<String> followingIDs = new ArrayList<String>();
+        if (jsonResponse.has("items")) {
+            // System.out.println(jsonResponse.getJSONArray("items").length() + " records found in the response");
+            for (int i = 0; i < jsonResponse.getJSONArray("items").length(); i++) {
+                if(jsonResponse.getJSONArray("items").getJSONObject(i).getString("followee").equals(id)){
+                    followingIDs.add(jsonResponse.getJSONArray("items").getJSONObject(i).getString("follower"));
+                }
+                else {
+                    continue;
+                }
+            }
+        } else {
+            System.out.println("Records not found in the response");
+            return null;
+        }
+        return followingIDs;         
     }
     public static String[] parseEmails(String response) {
         JSONObject jsonResponse = new JSONObject(response);
