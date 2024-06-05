@@ -23,7 +23,7 @@ public class VHTTP {
             os.write(json);
         }
         int responseCode = connection.getResponseCode();
-        System.out.println("POST Response Code: " + responseCode);
+        // System.out.println("POST Response Code: " + responseCode);
         if (responseCode == HttpURLConnection.HTTP_OK) {
             BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             String inputLine;
@@ -36,7 +36,7 @@ public class VHTTP {
             String responseString = response.toString();
             return responseString;
         } else {
-            System.out.println("POST request failed. Please try again.");
+            // System.out.println("POST request failed. Please try again.");
             return null;
         }
          
@@ -56,7 +56,7 @@ public class VHTTP {
             os.write(json);
         }
         int responseCode = connection.getResponseCode();
-        System.out.println("POST Response Code: " + responseCode);
+        // System.out.println("POST Response Code: " + responseCode);
         if (responseCode == HttpURLConnection.HTTP_OK) {
             BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             String inputLine;
@@ -69,7 +69,7 @@ public class VHTTP {
             String responseString = response.toString();
             return responseString;
         } else {
-            System.out.println("POST request failed. Please try again.");
+            // System.out.println("POST request failed. Please try again.");
             return null;
         }
          
@@ -80,7 +80,7 @@ public class VHTTP {
         connection.setRequestMethod("GET");
         connection.connect();
         int responseCode = connection.getResponseCode();
-        System.out.println("GET Response Code: " + responseCode);
+        // System.out.println("GET Response Code: " + responseCode);
         if (responseCode == HttpURLConnection.HTTP_OK) {
             BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             String inputLine;
@@ -93,7 +93,7 @@ public class VHTTP {
             String responseString = response.toString();
             return responseString;
         } else {
-            System.out.println("GET request failed. Please try again.");
+            // System.out.println("GET request failed. Please try again.");
             return null;
         }
     }
@@ -104,7 +104,7 @@ public class VHTTP {
         connection.setRequestProperty("Authorization", "Bearer " + token);
         connection.connect();
         int responseCode = connection.getResponseCode();
-        System.out.println("GET Response Code: " + responseCode);
+        // System.out.println("GET Response Code: " + responseCode);
         if (responseCode == HttpURLConnection.HTTP_OK) {
             BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             String inputLine;
@@ -117,7 +117,7 @@ public class VHTTP {
             String responseString = response.toString();
             return responseString;
         } else {
-            System.out.println("GET request failed. Please try again.");
+            // System.out.println("GET request failed. Please try again.");
             return null;
         }
     }
@@ -136,7 +136,7 @@ public class VHTTP {
         JSONObject record = jsonResponse.getJSONObject("record");
         if (record.has("id")) {
             String id = record.getString("id");
-            System.out.println(id);
+            // System.out.println(id);
             return id;
         } else {
             System.out.println("ID not found in the response");
@@ -149,8 +149,8 @@ public class VHTTP {
             String response = VHTTP.get(url, token);
             JSONObject jsonResponse = new JSONObject(response);
             if (jsonResponse.has("items")) {
-                System.out.println(jsonResponse.getJSONArray("items").length() + " records found in the response");
-                System.out.println(jsonResponse.getJSONArray("items"));
+                // System.out.println(jsonResponse.getJSONArray("items").length() + " records found in the response");
+                // System.out.println(jsonResponse.getJSONArray("items"));
                 for (int i = 0; i < jsonResponse.getJSONArray("items").length(); i++) {
                     if (jsonResponse.getJSONArray("items").getJSONObject(i).getString("username").equals(username)) {
                         String id = jsonResponse.getJSONArray("items").getJSONObject(i).getString("id");
@@ -231,6 +231,31 @@ public class VHTTP {
             return usernames;
         } else {
             System.out.println("Records not found in the response");
+            return null;
+        }
+    }
+    public static String getUsernameFromID(String id, String token) {
+        String url = "https://apcsa.continuityhost.com/api/collections/users/records";
+        try {
+            String response = VHTTP.get(url, token);
+            JSONObject jsonResponse = new JSONObject(response);
+            if (jsonResponse.has("items")) {
+                // System.out.println(jsonResponse.getJSONArray("items").length() + " records found in the response");
+                // System.out.println(jsonResponse.getJSONArray("items"));
+                for (int i = 0; i < jsonResponse.getJSONArray("items").length(); i++) {
+                    if (jsonResponse.getJSONArray("items").getJSONObject(i).getString("id").equals(id)) {
+                        String username = jsonResponse.getJSONArray("items").getJSONObject(i).getString("username");
+                        return username;
+                    }
+                }
+                System.out.println("ID not found in the response");
+                return null;
+            } else {
+                System.out.println("Records not found in the response");
+                return null;
+            }
+        } catch (IOException e) {
+            System.out.println("Error: " + e);
             return null;
         }
     }
