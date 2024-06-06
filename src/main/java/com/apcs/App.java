@@ -53,6 +53,7 @@ public final class App {
                     System.out.println("Commands: /q (quit), /help (display this message)");
                     break;
                 case "/lp":
+                    listFollowers(true);
                     listPosts();
                     break;
                 case "/lfr":
@@ -97,6 +98,8 @@ public final class App {
         byte[] out = String.format("{\"follower\":\"%s\",\"followee\":\"%s\"}", currentUserId, id).getBytes(StandardCharsets.UTF_8);
         String url = "https://apcsa.continuityhost.com/api/collections/follows/records";
         String response = VHTTP.post(url, out, token);
+        curFollowing.add(username);
+
         // System.out.println(response);
 
     }
@@ -191,7 +194,8 @@ public final class App {
             JSONObject jsonResponse = new JSONObject(userResponse);
             if (jsonResponse.has("username")) {
                 String username = jsonResponse.getString("username");
-                curFollowers.add(username);
+                if(!curFollowers.contains(username))
+                    curFollowers.add(username);
                 // System.out.println("\t" + username);
             } else {
                 // System.out.println("Username not found in the response");
@@ -274,12 +278,24 @@ public final class App {
             }
         }
         String password = "";
-        if(console == null){
-            System.out.println("Password: ");
-            password = input.nextLine();
-        }  
-        else {
-            password = new String(console.readPassword("Password: "));
+        boolean flag = false;
+        while(!flag) {
+            if(console == null){
+                System.out.println("Password: ");
+                password = input.nextLine();
+            }  
+            else {
+                password = new String(console.readPassword("Password: "));
+            }
+            if(password.length() < 8) {
+                System.out.println("Password must be at least 8 characters long");
+            }
+            else if(password.length() >= 72) {
+                System.out.println("Password must be less than 72 characters long");
+            }
+            else {
+                flag = true;
+            }
         }
         String confirm = "";
         if(console == null) {
@@ -308,7 +324,7 @@ public final class App {
         String signup = "https://apcsa.continuityhost.com/api/collections/users/records";
         try {
             String response = VHTTP.post(signup, out);
-            System.out.println(response);
+            // System.out.println(response);
             // return true;
             byte[] out1 = String.format("{\"identity\":\"%s\",\"password\":\"%s\"}", email, password).getBytes(StandardCharsets.UTF_8);
             String signin = "https://apcsa.continuityhost.com/api/collections/users/auth-with-password";
@@ -332,11 +348,18 @@ public final class App {
     }
     @SuppressWarnings("resource")
     private static boolean signIn() throws IOException {
+        Console console = System.console();
         Scanner input = new Scanner(System.in);
         System.out.println("Email: ");
         String email = input.nextLine();
-        System.out.println("Password: ");  
-        String password = input.nextLine();
+        String password = "";
+        if(console == null) {
+            System.out.println("Password: ");  
+            password = input.nextLine();
+        }
+        else {
+            password = new String(console.readPassword("Password: "));
+        }
 
         byte[] out = String.format("{\"identity\":\"%s\",\"password\":\"%s\"}", email, password).getBytes(StandardCharsets.UTF_8);
         String signin = "https://apcsa.continuityhost.com/api/collections/users/auth-with-password";
