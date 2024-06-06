@@ -50,7 +50,14 @@ public final class App {
                     System.out.println("Goodbye!");
                     break;
                 case "/help":
-                    System.out.println("Commands: /q (quit), /help (display this message)");
+                    System.out.println("Commands: ");
+                    System.out.println("\t/q - quit");
+                    System.out.println("\t/help - list commands");
+                    System.out.println("\t/lp - list posts");
+                    System.out.println("\t/lfr - list followers");
+                    System.out.println("\t/lfg - list following");
+                    System.out.println("\t/p - post");
+                    System.out.println("\t/f - follow");
                     break;
                 case "/lp":
                     listFollowers(true);
